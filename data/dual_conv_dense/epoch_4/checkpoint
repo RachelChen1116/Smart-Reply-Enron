@@ -1,0 +1,6 @@
+model_checkpoint_path: "model.cpkt"
+all_model_checkpoint_paths: "../epoch_0/model.cpkt"
+all_model_checkpoint_paths: "../epoch_1/model.cpkt"
+all_model_checkpoint_paths: "../epoch_2/model.cpkt"
+all_model_checkpoint_paths: "../epoch_3/model.cpkt"
+all_model_checkpoint_paths: "model.cpkt"

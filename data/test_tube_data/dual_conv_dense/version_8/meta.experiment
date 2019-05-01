@@ -1,0 +1,1 @@
+{"name": "dual_conv_dense", "version": 8, "tags_path": "data/test_tube_data/dual_conv_dense/version_8/meta_tags.json", "metrics_path": "data/test_tube_data/dual_conv_dense/version_8/metrics.csv", "autosave": false, "description": "Dual dense + dot product loss. Base model", "created_at": "2019-05-01 02:20:14.626898", "exp_hash": "dual_conv_dense_v8"}
