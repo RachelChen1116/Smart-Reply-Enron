@@ -11,12 +11,21 @@ import re
 
 class UDCDataset(object):
 
+    # def __init__(self, train_path, val_path, test_path, vocab_path, max_seq_len):
+    #     print('loading dataset...')
+    #     self.tokenizer = Tokenizer(vocab_path, max_seq_len)
+    #     self.test_x, self.test_y = self.__load_data_type(data_path=test_path)
+    #     self.val_x, self.val_y = self.__load_data_type(data_path=val_path)
+    #     self.train_x, self.train_y = self.__load_data_type(data_path=train_path)
+    #     print('loaded data...')
+
+
     def __init__(self, train_path, val_path, test_path, vocab_path, max_seq_len):
         print('loading dataset...')
         self.tokenizer = Tokenizer(vocab_path, max_seq_len)
-        self.test_x, self.test_y = self.__load_data_type(data_path=test_path)
-        self.val_x, self.val_y = self.__load_data_type(data_path=val_path)
-        self.train_x, self.train_y = self.__load_data_type(data_path=train_path)
+        self.test_x, self.test_y, self.test = self.__load_data_type(data_path=test_path)
+        self.val_x, self.val_y, self.val = self.__load_data_type(data_path=val_path)
+        self.train_x, self.train_y, self.train = self.__load_data_type(data_path=train_path)
         print('loaded data...')
 
     @property
@@ -35,14 +44,24 @@ class UDCDataset(object):
     def vocab_size(self):
         return self.tokenizer.vocab_size()
 
+    # def __load_data_type(self, data_path):
+    #     data = pd.read_csv(data_path)
+    #     data = data.fillna(" ")
+    #     x = data['Context'].values
+    #     x = self.tokenizer.texts_to_sequences(x)
+    #     y = data['Utterance'].values
+    #     y = self.tokenizer.texts_to_sequences(y)
+    #     return x, y
+
+
     def __load_data_type(self, data_path):
         data = pd.read_csv(data_path)
         data = data.fillna(" ")
         x = data['Context'].values
-        x = self.tokenizer.texts_to_sequences(x)
+        x_data = self.tokenizer.texts_to_sequences(x)
         y = data['Utterance'].values
-        y = self.tokenizer.texts_to_sequences(y)
-        return x, y
+        y_data = self.tokenizer.texts_to_sequences(y)
+        return x_data, y_data, x+y
 
     def train_generator(self, batch_size, max_epochs=None):
         return self.__data_generator(len(self.train_x), self.train_x, self.train_y, batch_size, max_epochs)

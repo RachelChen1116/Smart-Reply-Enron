@@ -7,7 +7,20 @@ from dataset.ubuntu_dialogue_corpus import UDCDataset
 from test_tube.log import Experiment
 from tensorflow.contrib.keras.api.keras.utils import Progbar
 import numpy as np
+import tensorflow as tf
+import tensorflow_hub as hub
+import keras
+from keras.models import Model
+from keras.layers import Input, Dense
 
+
+def prep(lst, num):
+    list1 = np.array_split(lst,num)
+    list2 = [l.tolist() for l in list1]
+    s = '<\s>'
+    list3 = [s.join(l) for l in list2]
+    
+    return list3
 
 def train_main(hparams):
     """
@@ -49,7 +62,22 @@ def train_main(hparams):
     # ----------------------
     # you can preload your own or learn in the network
     # in this case we'll just learn it in the network
-    embedding_layer = tf.Variable(tf.random_uniform([udc_dataset.vocab_size, hparams.embedding_dim], -1.0, 1.0), name='embedding')
+    # embedding_layer = tf.Variable(tf.random_uniform([udc_dataset.vocab_size, hparams.embedding_dim], -1.0, 1.0), name='embedding')
+    x = prep(udc_dataset.train,hparams.batch_size)
+    print(type(x))
+    print(len(x))
+
+    elmo = hub.Module("https://tfhub.dev/google/elmo/2", trainable=True)
+    print('elmo')
+    # context = list(udc_dataset['Context'])
+    # elmo_text = elmo(context, signature="default", as_dict=True)
+    # input_text = Input(shape=(1,), dtype="string")
+    # embedding = Lambda(ELMoEmbedding, output_shape=(1024, ))(input_text)
+    
+    elmo_text = elmo(tf.squeeze(tf.cast(x, tf.string)), signature="default", as_dict=True)["default"]
+    embedding_layer = Dense(256, activation='relu', kernel_regularizer=keras.regularizers.l2(0.001))(elmo_text)
+
+
 
     # ----------------------
     # RESOLVE EMBEDDINGS
