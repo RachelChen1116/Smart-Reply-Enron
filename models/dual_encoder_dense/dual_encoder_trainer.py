@@ -140,7 +140,6 @@ def train_main(hparams):
 
         # save exp data
 
-
 def evaluate_recall(y, y_test, k=1):
     num_examples = float(len(y))
     num_correct = 0
@@ -153,10 +152,28 @@ def evaluate_recall(y, y_test, k=1):
 def test_precision_at_k(pred_opt, feed_dict, k, sess):
     sims = pred_opt.eval(session=sess, feed_dict=feed_dict)
     labels = range(0, len(sims))
+    print(len(sims))
     for i, pred_vector in enumerate(sims):
         sims[i] = [i[0] for i in sorted(enumerate(pred_vector), key=lambda x: x[1])][::-1]
 
     recall_score = evaluate_recall(sims, labels, k)
+    return recall_score
+
+
+
+def new_evaluate_recall(y, k=1):
+    num_correct = 0
+    if 0 in y[0][:k]:
+        num_correct += 1
+    return num_correct
+
+
+def new_test_precision_at_k(pred_opt, feed_dict, k, sess):
+    sims = pred_opt.eval(session=sess, feed_dict=feed_dict)
+    for i, pred_vector in enumerate(sims):
+        sims[i] = [i[0] for i in sorted(enumerate(pred_vector), key=lambda x: x[1])][::-1]
+
+    recall_score = new_evaluate_recall(sims, k)
     return recall_score
 
 
@@ -201,8 +218,8 @@ def check_val_stats(model, pred_opt, data, hparams, X_ph, Y_ph, exp, sess, epoch
     :return:
     """
     print('checking val loss...')
-    max_val_batches = 100
-    val_gen = data.val_generator(batch_size=hparams.batch_size, max_epochs=1)
+    max_val_batches = len(data.val_y)
+    val_gen = data.p_at_k_generator(max_epochs=max_val_batches)
 
     overall_err = []
     overall_p_1 = []
@@ -221,8 +238,8 @@ def check_val_stats(model, pred_opt, data, hparams, X_ph, Y_ph, exp, sess, epoch
 
         # calculate metrics
         val_err = model.eval(session=sess, feed_dict=feed_dict)
-        precission_at_1 = test_precision_at_k(pred_opt, feed_dict, k=1, sess=sess)
-        precission_at_2 = test_precision_at_k(pred_opt, feed_dict, k=2, sess=sess)
+        precission_at_1 = new_test_precision_at_k(pred_opt, feed_dict, k=1, sess=sess)
+        precission_at_2 = new_test_precision_at_k(pred_opt, feed_dict, k=2, sess=sess)
 
         # track metrics for means
         overall_err.append(val_err)
@@ -235,8 +252,8 @@ def check_val_stats(model, pred_opt, data, hparams, X_ph, Y_ph, exp, sess, epoch
 
     # log and save val metrics
     overall_val_mean_err = np.asarray(overall_err).mean()
-    overall_p_1_mean = np.asarray(overall_p_1).mean()
-    overall_p_2_mean = np.asarray(overall_p_2).mean()
+    overall_p_1_mean = np.asarray(overall_p_1).sum()/max_val_batches
+    overall_p_2_mean = np.asarray(overall_p_2).sum()/max_val_batches
     exp.add_metric_row({'epoch_mean_err': overall_val_mean_err,
                         'epoch_P@1_mean': overall_p_1_mean,
                         'epoch_P@2_mean': overall_p_2_mean,
