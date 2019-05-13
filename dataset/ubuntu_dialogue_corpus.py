@@ -50,49 +50,9 @@ class UDCDataset(object):
     def val_generator(self, batch_size, max_epochs=None):
         return self.__data_generator(len(self.val_x), self.val_x, self.val_y, batch_size, max_epochs)
 
-    def p_at_k_generator(self, max_epochs=None):
-        return self.__data_p_at_k_generator(len(self.val_x), self.val_x, self.val_y,100, max_epochs)
-
     def test_generator(self, batch_size, max_epochs=None):
         return self.__data_generator(len(self.test_x), self.test_x, self.test_y, batch_size, max_epochs)
 
-    def __data_p_at_k_generator(self, num_datapoints, x, y, batch_size=100, max_epochs=None):
-        """
-        Read the h5 buckets
-
-        :param data_type:
-        :param batch_size:
-        :param max_epochs:
-        :return:
-        """
-        # figure out which dataset to use
-        epoch = 0
-        while True:
-            for batch_num in range(0, num_datapoints):
-                # calc pointer to next batch
-                i = batch_num
-                i_end = i + batch_size
-
-                x_new = np.append(x[:i],x[i+1:])
-                y_new = np.append(y[:i],y[i+1:])
-                x_new, y_new = shuffle(x_new,y_new, n_samples=99)
-
-                batch_x = x[i: i+1].astype(np.int32)
-                batch_y = y[i: i+1].astype(np.int32)
-
-                batch_x = np.append(batch_x,x_new)
-                batch_y = np.append(batch_y, y_new)
-                # make sure we always have a batch of at least batch size
-                # fill the rest of the batch with zeros
-
-                # serve only batches of the proper size
-                if len(batch_x) == batch_size:
-                    yield batch_x, batch_y
-
-            # stop generator once we go over max epochs
-            epoch += 1
-            if max_epochs is not None and epoch >= max_epochs:
-                break
     def __data_generator(self, num_datapoints, x, y, batch_size, max_epochs=None):
         """
         Read the h5 buckets
@@ -123,7 +83,44 @@ class UDCDataset(object):
             epoch += 1
             if max_epochs is not None and epoch >= max_epochs:
                 break
+    def p_at_k_generator(self, max_epochs=None):
+        return self.__data_p_at_k_generator(len(self.val_x), self.val_x, self.val_y,100, max_epochs)
 
+    def __data_p_at_k_generator(self, num_datapoints, x, y, batch_size=100, max_epochs=None):
+        """
+        Read the h5 buckets
+
+        :param data_type:
+        :param batch_size:
+        :param max_epochs:
+        :return:
+        """
+        for batch_num in range(0, num_datapoints):
+            # calc pointer to next batch
+            epoch = 0
+            while True:
+                for batch_num in range(0, num_datapoints, batch_size):
+                    # calc pointer to next batch
+                    i = batch_num
+                    x_new = np.concatenate((x[:i], x[i + 1:]), axis=0).astype(np.int32)
+                    y_new = np.concatenate((y[:i], y[i + 1:]), axis=0).astype(np.int32)
+                    x_new, y_new = shuffle(x_new, y_new, n_samples=99)
+                    batch_x = x[i: i + 1].astype(np.int32)
+                    batch_y = y[i: i + 1].astype(np.int32)
+
+                    batch_x = np.concatenate((batch_x, x_new), axis=0)
+                    batch_y = np.concatenate((batch_y, y_new), axis=0)
+
+                    # serve only batches of the proper size
+                    if len(batch_x) == batch_size:
+                        yield batch_x, batch_y
+
+                # stop generator once we go over max epochs
+                epoch += 1
+                if max_epochs is not None and epoch >= max_epochs:
+                    break
+
+            # stop generator once we go over max epochs
 
 class Tokenizer(object):
     not_found_token = 'NF'
